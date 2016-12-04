@@ -19,7 +19,6 @@ const DocInfo = imports.misc.docInfo;
 const GLib = imports.gi.GLib;
 const Settings = imports.ui.settings;
 const SearchProviderManager = imports.ui.searchProviderManager;
-const l = imports.applet._
 const clog = imports.applet.clog
 
 
@@ -72,8 +71,8 @@ VisibleChildIterator.prototype = {
     this.reloadVisible();
   },
 
-  reloadVisible: function () {
-    this.array = l.filter(this.array, x => !(x._delegate instanceof PopupMenu.PopupSeparatorMenuItem))
+  reloadVisible: function() {
+    this.array = this.container.get_focus_chain().filter(x => !(x._delegate instanceof PopupMenu.PopupSeparatorMenuItem));
   },
 
   getNextVisible: function (curChild) {

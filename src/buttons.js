@@ -12,7 +12,6 @@ const DND = imports.ui.dnd;
 const Meta = imports.gi.Meta;
 const GLib = imports.gi.GLib;
 const Pango = imports.gi.Pango;
-const l = imports.applet._
 
 const MAX_FAV_ICON_SIZE = 32;
 const CATEGORY_ICON_SIZE = 22;
