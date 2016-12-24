@@ -6,8 +6,9 @@ This is a fork of the default Cinnamon 3.2 menu applet, with more customization 
 ### Features
 
  * Set the height and width of the menu.
+ * Accurate drill down of search results.
  * Move the search box and app info area to the top, bottom, or hide them.
- * Hide the scrollbar.
+ * Ability to hide the scrollbar.
 
 Tested on Cinnamon 3.0.7 and Cinnamon 3.2.2.
 
