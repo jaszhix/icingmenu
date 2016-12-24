@@ -555,9 +555,11 @@ RecentButton.prototype = {
     PopupMenu.PopupBaseMenuItem.prototype._init.call(this, {
       hover: false
     });
-    this.file = file;
+    this.mimeType = file.mimeType;
+    this.uri = file.uri;
+    this.uriDecoded = file.uriDecoded;
     this.appsMenuButton = appsMenuButton;
-    this.button_name = this.file.name;
+    this.button_name = file.name;
     this.actor.set_style_class_name('menu-application-button');
     this.actor._delegate = this;
     this.label = new St.Label({
@@ -592,7 +594,7 @@ RecentButton.prototype = {
   },
 
   activate: function (event) {
-    this.file.launch();
+    Gio.app_info_launch_default_for_uri(this.uri, global.create_app_launch_context());
     this.appsMenuButton.menu.close();
   },
 
@@ -625,9 +627,9 @@ RecentButton.prototype = {
       menuItem.actor.style = 'font-weight: bold';
       this.menu.addMenuItem(menuItem);
 
-      let file = Gio.File.new_for_uri(this.file.uri);
+      let file = Gio.File.new_for_uri(this.uri);
 
-      let default_info = Gio.AppInfo.get_default_for_type(this.file.mimeType, !this.hasLocalPath(file));
+      let default_info = Gio.AppInfo.get_default_for_type(this.mimeType, !this.hasLocalPath(file));
 
       if (default_info) {
         menuItem = new RecentContextMenuItem(this,
@@ -641,7 +643,7 @@ RecentButton.prototype = {
         this.menu.addMenuItem(menuItem);
       }
 
-      let infos = Gio.AppInfo.get_all_for_type(this.file.mimeType)
+      let infos = Gio.AppInfo.get_all_for_type(this.mimeType);
 
       var handleAddRecentContextMenuItem = (info)=>{
         menuItem = new RecentContextMenuItem(this,
@@ -658,7 +660,7 @@ RecentButton.prototype = {
       for (let i = 0, len = infos.length; i < len; i++) {
         let info = infos[i];
 
-        file = Gio.File.new_for_uri(this.file.uri);
+        file = Gio.File.new_for_uri(this.uri);
 
         if (!this.hasLocalPath(file) && !info.supports_uris()) {
           continue;
@@ -676,7 +678,7 @@ RecentButton.prototype = {
           _('Other application...'),
           false,
           ()=>{
-            Util.spawnCommandLine(`nemo-open-with ${this.file.uri}`);
+            Util.spawnCommandLine(`nemo-open-with ${this.uri}`);
             this.toggleMenu();
             this.appsMenuButton.menu.close();
           });

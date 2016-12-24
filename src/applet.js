@@ -1316,12 +1316,12 @@ MyApplet.prototype = {
           if (this.appInfoPosition !== 'none') {
             this.selectedAppTitle.set_text('');
             if (this.c32) {
-              let selectedAppUri = button.file.uriDecoded;
+              let selectedAppUri = button.uriDecoded;
               let fileIndex = selectedAppUri.indexOf('file:///');
               if (fileIndex !== -1) {
                 selectedAppUri = selectedAppUri.substr(fileIndex + 7);
               }
-              let file = Gio.file_new_for_uri(button.file.uriDecoded);
+              let file = Gio.file_new_for_uri(button.uriDecoded);
               if (!file.query_exists(null)) {
                 this.selectedAppTitle.set_text(_('This file is no longer available'));
               }
@@ -1353,7 +1353,7 @@ MyApplet.prototype = {
 
           // Cinnamon < 3.2 compatibility fix
           try {
-            var file = Gio.file_new_for_uri(button.file.uriDecoded);
+            var file = Gio.file_new_for_uri(button.uri);
           } catch (e) {
             file = null
           }
