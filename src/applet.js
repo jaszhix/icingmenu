@@ -156,10 +156,10 @@ MyApplet.prototype = {
       {key: 'menu-label', value: 'menuLabel', cb: this._updateIconAndLabel},
       {key: 'overlay-key', value: 'overlayKey', cb: this._updateKeybinding},
       {key: 'menu-height', value: 'menuHeight', cb: this._recalc_height},
-      {key: 'menu-width', value: 'menuWidth', cb: this._reloadApp},
-      {key: 'search-position', value: 'searchPosition', cb: this._reloadApp},
-      {key: 'appInfo-position', value: 'appInfoPosition', cb: this._reloadApp},
-      {key: 'show-scrollbar', value: 'showScrollbar', cb: this._reloadApp},
+      {key: 'menu-width', value: 'menuWidth', cb: this._refreshMenu},
+      {key: 'search-position', value: 'searchPosition', cb: this._refreshMenu},
+      {key: 'appInfo-position', value: 'appInfoPosition', cb: this._refreshMenu},
+      {key: 'show-scrollbar', value: 'showScrollbar', cb: this._refreshMenu},
       {key: 'show-category-icons', value: 'showCategoryIcons', cb: this._refreshAll},
       {key: 'show-application-icons', value: 'showApplicationIcons', cb: this._refreshAll},
       {key: 'favbox-show', value: 'favBoxShow', cb: this._reloadApp},
@@ -351,6 +351,10 @@ MyApplet.prototype = {
         this.hide_applet_label(false);
       }
     }
+  },
+
+  _refreshMenu(){
+    this.on_orientation_changed(this.orientation)
   },
 
   on_orientation_changed: function (orientation) {
