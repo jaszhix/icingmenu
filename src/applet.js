@@ -23,6 +23,7 @@ const clog = imports.applet.clog
 
 
 const AppletDir = imports.ui.appletManager.applets['IcingMenu@json']
+const kmp = AppletDir.kmp.kmp
 const TransientButton = AppletDir.buttons.TransientButton
 const ApplicationButton = AppletDir.buttons.ApplicationButton
 const SearchProviderResultButton = AppletDir.buttons.SearchProviderResultButton
@@ -2216,15 +2217,11 @@ MyApplet.prototype = {
     } else {
       applist = 'all';
     }
-    let res;
     if (pattern) {
-      res = [];
+      var res = [];
       for (let i = 0, len = this._applicationsButtons.length; i < len; i++) {
         let app = this._applicationsButtons[i].app;
-        if (Util.latinise(app.get_name().toLowerCase()).indexOf(pattern) !== -1 ||
-          (app.get_keywords() && Util.latinise(app.get_keywords().toLowerCase()).indexOf(pattern) !== -1) ||
-          (app.get_description() && Util.latinise(app.get_description().toLowerCase()).indexOf(pattern) !== -1) ||
-          (app.get_id() && Util.latinise(app.get_id().slice(0, -8).toLowerCase()).indexOf(pattern) !== -1)) {
+        if (kmp(Util.latinise(app.get_name().toLowerCase()), pattern) !== -1) {
           res.push(app.get_id());
         }
       }
