@@ -1,5 +1,13 @@
 Changelog
 
+### 1.0.2
+
+  * Added self-updating ability. This is disabled by default.
+  * Moved the menu editor button to the top of the settings list.
+  * Added upstream changes.
+    * Added context menu icons.
+    * Optimizations.
+
 ### 1.0.1
 
   * Improved the responsiveness of settings changes.
