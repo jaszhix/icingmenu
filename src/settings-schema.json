@@ -1,4 +1,14 @@
 {
+  "header0": {
+    "type": "header",
+    "description": "Menu Entries"
+  },
+  "menu-editor-button": {
+    "type": "button",
+    "description": "Open the menu editor",
+    "callback": "_launch_editor",
+    "tooltip": "Press this button to customize your menu entries."
+  },
   "header1": {
     "type": "header",
     "description": "Panel Appearance"
@@ -141,11 +151,5 @@
     "default": true,
     "description": "Show bookmarks and places",
     "tooltip": "Choose whether or not to show bookmarks and places in the menu."
-  },
-  "menu-editor-button": {
-    "type": "button",
-    "description": "Open the menu editor",
-    "callback": "_launch_editor",
-    "tooltip": "Press this button to customize your menu entries."
   }
 }
