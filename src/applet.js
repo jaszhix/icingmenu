@@ -19,6 +19,8 @@ const DocInfo = imports.misc.docInfo;
 const GLib = imports.gi.GLib;
 const Settings = imports.ui.settings;
 const SearchProviderManager = imports.ui.searchProviderManager;
+const ajax = imports.applet.ajax
+const setTimeout = imports.applet.setTimeout
 const clog = imports.applet.clog
 
 
@@ -153,6 +155,7 @@ MyApplet.prototype = {
     this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
 
     var settingsProps = [
+      {key: 'autoUpdate', value: 'autoUpdate', cb: this.handleUpdate},
       {key: 'show-places', value: 'showPlaces', cb: this._refreshBelowApps},
       {key: 'hover-delay', value: 'hover_delay_ms', cb: this._updateActivateOnHover},
       {key: 'activate-on-hover', value: 'activateOnHover', cb: this._updateActivateOnHover},
@@ -258,6 +261,34 @@ MyApplet.prototype = {
     this._recalc_height();
 
     this.update_label_visible();
+
+    // Wait 3s, as Cinnamon doesn't populate Applet._meta until after the applet loads.
+    setTimeout(()=>this.handleUpdate(), 3000)
+  },
+
+  handleUpdate(){
+    if (this.autoUpdate) {
+      this.version = `v${this._meta.version}`
+      // Parse out the HTML response instead of using the API endpoint to work around Github's API limit.
+      ajax({method: 'GET', url: 'https://github.com/jaszhix/icingmenu/releases/latest', json: false}).then((res)=>{
+        let split = '/jaszhix/icingmenu/releases/download/'
+        let end = res.split(split)[1].split('.zip')[0]
+        let version = end.split('/')[0]
+        let file = `https://github.com${split}${end}.zip`
+        if (version !== this.version) {
+          let now = Date.now()
+          Main.notify('Icing Menu is updating...', 'Go to settings if you wish to disable automatic updates.')
+          Util.trySpawnCommandLine(`bash -c 'wget -O /tmp/IcingMenu-${now}.zip ${file}'`)
+          // Defer for conservative durations due to lack of callback from Utils CLI methods
+          setTimeout(()=>{
+            Util.trySpawnCommandLine(`bash -c 'unzip -o /tmp/IcingMenu-${now}.zip -d ~/.local/share/cinnamon/applets/IcingMenu@json/'`)
+            setTimeout(()=>this._reloadApp(), 10000)
+          }, 10000)
+        }
+      }).catch((e)=>{
+        return null
+      })
+    }
   },
 
   _reloadApp: function () {

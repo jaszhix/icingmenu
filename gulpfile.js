@@ -7,7 +7,7 @@ var exec = require('child_process').exec;
 
 gulp.task('package', ()=> {
   return gulp.src('./IcingMenu@json/**/**/*')
-    .pipe(zip('ITM-dist-' + Date.now() + '.zip'))
+    .pipe(zip('IcingMenu-dist-' + Date.now() + '.zip'))
     .pipe(gulp.dest('./builds'));
 });
 

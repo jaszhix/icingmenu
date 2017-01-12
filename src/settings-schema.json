@@ -1,4 +1,17 @@
 {
+  "IcingMenu": {
+    "type": "header",
+    "description": "Icing Menu Settings"
+  },
+  "seperator0": {
+    "type": "separator"
+  },
+  "autoUpdate": {
+    "type": "checkbox",
+    "default": false,
+    "description": "Update this applet automatically",
+    "tooltip": "When enabled, ITM will check the Github releases on init, and will start to upgrade if it finds a newer version."
+  },
   "header0": {
     "type": "header",
     "description": "Menu Entries"
