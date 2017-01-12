@@ -6,12 +6,14 @@ const AppFavorites = imports.ui.appFavorites;
 const Gtk = imports.gi.Gtk;
 const Atk = imports.gi.Atk;
 const Gio = imports.gi.Gio;
+const Lang = imports.lang;
 const FileUtils = imports.misc.fileUtils;
 const Util = imports.misc.util;
 const DND = imports.ui.dnd;
 const Meta = imports.gi.Meta;
 const GLib = imports.gi.GLib;
 const Pango = imports.gi.Pango;
+const clog = imports.applet.clog
 
 const MAX_FAV_ICON_SIZE = 32;
 const CATEGORY_ICON_SIZE = 22;
@@ -21,14 +23,14 @@ const MAX_BUTTON_WIDTH = 'max-width: 20em;';
 
 const USER_DESKTOP_PATH = FileUtils.getUserDesktopDir();
 
-function ApplicationContextMenuItem(appButton, label, action) {
-  this._init(appButton, label, action);
+function ApplicationContextMenuItem(appButton, label, action, iconName) {
+  this._init(appButton, label, action, iconName);
 }
 
 ApplicationContextMenuItem.prototype = {
   __proto__: PopupMenu.PopupBaseMenuItem.prototype,
 
-  _init: function (appButton, label, action) {
+  _init: function (appButton, label, action, iconName) {
     PopupMenu.PopupBaseMenuItem.prototype._init.call(this, {
       focusOnHover: false
     });
@@ -38,6 +40,18 @@ ApplicationContextMenuItem.prototype = {
     this.label = new St.Label({
       text: label
     });
+    if (iconName !== null) {
+      this.icon = new St.Icon({
+        icon_name: iconName,
+        icon_size: 12,
+        icon_type: St.IconType.SYMBOLIC
+      });
+      if (this.icon) {
+        this.addActor(this.icon);
+        this.icon.realize();
+      }
+    }
+
     this.addActor(this.label);
   },
 
@@ -62,8 +76,11 @@ ApplicationContextMenuItem.prototype = {
       let destFile = Gio.file_new_for_path(`${USER_DESKTOP_PATH}/${this._appButton.app.get_id()}`);
       try {
         file.copy(destFile, 0, null, function () {});
-        // Need to find a way to do that using the Gio library, but modifying the access::can-execute attribute on the file object seems unsupported
-        Util.spawnCommandLine(`chmod +x '${USER_DESKTOP_PATH}/${this._appButton.app.get_id()}'`);
+        try {
+          FileUtils.changeModeGFile(destFile, 755);
+        } catch (e) {
+          Util.spawnCommandLine(`chmod +x '${USER_DESKTOP_PATH}/${this._appButton.app.get_id()}'`);
+        }
       } catch (e) {
         global.log(e);
       }
@@ -165,36 +182,36 @@ GenericApplicationButton.prototype = {
       for (let i = 0, len = children.length; i < len; i++) {
         this.menu.box.remove_actor(children[i]);
       }
-      let menuItem;
-      menuItem = new ApplicationContextMenuItem(this, _('Add to panel'), 'add_to_panel');
+      var menuItem;
+      menuItem = new ApplicationContextMenuItem(this, _('Add to panel'), 'add_to_panel', 'list-add');
       this.menu.addMenuItem(menuItem);
       if (USER_DESKTOP_PATH) {
-        menuItem = new ApplicationContextMenuItem(this, _('Add to desktop'), 'add_to_desktop');
+        menuItem = new ApplicationContextMenuItem(this, _('Add to desktop'), 'add_to_desktop', 'computer');
         this.menu.addMenuItem(menuItem);
       }
       if (AppFavorites.getAppFavorites().isFavorite(this.app.get_id())) {
-        menuItem = new ApplicationContextMenuItem(this, _('Remove from favorites'), 'remove_from_favorites');
+        menuItem = new ApplicationContextMenuItem(this, _('Remove from favorites'), 'remove_from_favorites', 'starred');
         this.menu.addMenuItem(menuItem);
       } else {
-        menuItem = new ApplicationContextMenuItem(this, _('Add to favorites'), 'add_to_favorites');
+        menuItem = new ApplicationContextMenuItem(this, _('Add to favorites'), 'add_to_favorites', 'non-starred');
         this.menu.addMenuItem(menuItem);
       }
       if (this.appsMenuButton._canUninstallApps) {
-        menuItem = new ApplicationContextMenuItem(this, _('Uninstall'), 'uninstall');
+        menuItem = new ApplicationContextMenuItem(this, _('Uninstall'), 'uninstall', 'edit-delete');
         this.menu.addMenuItem(menuItem);
       }
       if (this.appsMenuButton._isBumblebeeInstalled) {
-        menuItem = new ApplicationContextMenuItem(this, _('Run with nVidia GPU'), 'run_with_nvidia_gpu');
+        menuItem = new ApplicationContextMenuItem(this, _('Run with nVidia GPU'), 'run_with_nvidia_gpu', 'cpu');
         this.menu.addMenuItem(menuItem);
       }
     }
     this.menu.toggle();
   },
 
-  _subMenuOpenStateChanged: function () {
-    if (this.menu.isOpen) {
+  _subMenuOpenStateChanged: function(recentContextMenu) {
+    if (recentContextMenu.isOpen) {
       this.appsMenuButton._activeContextMenuParent = this;
-      this.appsMenuButton._scrollToButton(this.menu);
+      this.appsMenuButton._scrollToButton(recentContextMenu);
     } else {
       this.appsMenuButton._activeContextMenuItem = null;
       this.appsMenuButton._activeContextMenuParent = null;
@@ -202,8 +219,19 @@ GenericApplicationButton.prototype = {
   },
 
   get _contextIsOpen() {
-    return this.menu.isOpen;
-  }
+    return this.appsMenuButton.recentContextMenu !== null && this.appsMenuButton.recentContextMenu.isOpen;
+  },
+
+  destroy: function() {
+    this.file = null;
+    this.appsMenuButton = null;
+    this.label.destroy();
+    if (this.icon) {
+      this.icon.destroy();
+    }
+
+    PopupMenu.PopupBaseMenuItem.prototype.destroy.call(this);
+  },
 }
 
 function TransientButton(appsMenuButton, pathOrCommand) {
@@ -549,7 +577,7 @@ function RecentButton(appsMenuButton, file, showIcon) {
 }
 
 RecentButton.prototype = {
-  __proto__: PopupMenu.PopupSubMenuMenuItem.prototype,
+  __proto__: PopupMenu.PopupBaseMenuItem.prototype,
 
   _init: function (appsMenuButton, file, showIcon) {
     PopupMenu.PopupBaseMenuItem.prototype._init.call(this, {
@@ -599,7 +627,8 @@ RecentButton.prototype = {
   },
 
   activateContextMenus: function (event) {
-    if (!this.menu.isOpen) {
+    let menu = this.appsMenuButton.recentContextMenu;
+    if (menu !== null && menu.isOpen) {
       this.appsMenuButton.closeContextMenus(this, true);
     }
     this.toggleMenu();
@@ -613,19 +642,37 @@ RecentButton.prototype = {
     return file.is_native() || file.get_path() !== null;
   },
 
-  toggleMenu: function () {
-    if (!this.menu.isOpen) {
-      let children = this.menu.box.get_children();
-      for (let i = 0, len = children.length; i < len; i++) {
-        this.menu.box.remove_actor(children[i]);
+  toggleMenu: function() {
+    if (this.appsMenuButton.recentContextMenu === null) {
+      let menu = new PopupMenu.PopupSubMenu(this.actor);
+      menu.actor.set_style_class_name('menu-context-menu');
+      menu.connect('open-state-changed', Lang.bind(this, this._subMenuOpenStateChanged));
+      this.appsMenuButton.recentContextMenu = menu;
+    }
+
+    let menu = this.appsMenuButton.recentContextMenu;
+
+    if (!menu.isOpen) {
+      let parent = menu.actor.get_parent();
+      if (parent !== null) {
+        parent.remove_child(menu.actor);
       }
+
+      menu.sourceActor = this.actor;
+      this.actor.get_parent().insert_child_above(menu.actor, this.actor);
+
+      let children = menu.box.get_children();
+      for (var i in children) {
+        menu.box.remove_actor(children[i]);
+      }
+
       let menuItem;
 
-      menuItem = new PopupMenu.PopupMenuItem(_('Open with'), {
+      menuItem = new PopupMenu.PopupMenuItem(_("Open with"), {
         reactive: false
       });
-      menuItem.actor.style = 'font-weight: bold';
-      this.menu.addMenuItem(menuItem);
+      menuItem.actor.style = "font-weight: bold";
+      menu.addMenuItem(menuItem);
 
       let file = Gio.File.new_for_uri(this.uri);
 
@@ -635,29 +682,17 @@ RecentButton.prototype = {
         menuItem = new RecentContextMenuItem(this,
           default_info.get_display_name(),
           false,
-          ()=>{
+          Lang.bind(this, function() {
             default_info.launch([file], null, null);
             this.toggleMenu();
             this.appsMenuButton.menu.close();
-          })
-        this.menu.addMenuItem(menuItem);
+          }));
+        menu.addMenuItem(menuItem);
       }
 
-      let infos = Gio.AppInfo.get_all_for_type(this.mimeType);
+      let infos = Gio.AppInfo.get_all_for_type(this.mimeType)
 
-      var handleAddRecentContextMenuItem = (info)=>{
-        menuItem = new RecentContextMenuItem(this,
-          info.get_display_name(),
-          false,
-          ()=>{
-            info.launch([file], null, null);
-            this.toggleMenu();
-            this.appsMenuButton.menu.close();
-          });
-        this.menu.addMenuItem(menuItem);
-      };
-
-      for (let i = 0, len = infos.length; i < len; i++) {
+      for (let i = 0; i < infos.length; i++) {
         let info = infos[i];
 
         file = Gio.File.new_for_uri(this.uri);
@@ -670,22 +705,30 @@ RecentButton.prototype = {
           continue;
         }
 
-        handleAddRecentContextMenuItem(info);
-      }
-
-      if (GLib.find_program_in_path('nemo-open-with') !== null) {
         menuItem = new RecentContextMenuItem(this,
-          _('Other application...'),
+          info.get_display_name(),
           false,
-          ()=>{
-            Util.spawnCommandLine(`nemo-open-with ${this.uri}`);
+          Lang.bind(this, function() {
+            info.launch([file], null, null);
             this.toggleMenu();
             this.appsMenuButton.menu.close();
-          });
-        this.menu.addMenuItem(menuItem);
+          }));
+        menu.addMenuItem(menuItem);
+      }
+
+      if (GLib.find_program_in_path("nemo-open-with") != null) {
+        menuItem = new RecentContextMenuItem(this,
+          _("Other application..."),
+          false,
+          Lang.bind(this, function() {
+            Util.spawnCommandLine("nemo-open-with " + this.uri);
+            this.toggleMenu();
+            this.appsMenuButton.menu.close();
+          }));
+        menu.addMenuItem(menuItem);
       }
     }
-    this.menu.toggle();
+    this.appsMenuButton.recentContextMenu.toggle();
   },
 
   _subMenuOpenStateChanged: function () {
@@ -790,6 +833,18 @@ RecentClearButton.prototype = {
     this.appsMenuButton.menu.close();
     let GtkRecent = new Gtk.RecentManager();
     GtkRecent.purge_items();
+  }
+};
+
+function NoRecentDocsButton() {
+  this._init();
+}
+
+NoRecentDocsButton.prototype = {
+  __proto__: GenericButton.prototype,
+
+  _init: function () {
+    GenericButton.prototype._init.call(this, _('No recent documents'), null, false, null);
   }
 };
 
