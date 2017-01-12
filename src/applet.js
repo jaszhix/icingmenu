@@ -375,7 +375,11 @@ MyApplet.prototype = {
     this.menu = new Applet.AppletPopupMenu(this, orientation);
     this.menuManager.addMenu(this.menu);
 
-    this.menu.actor.setCustomStyleClass('menu-background');
+    if (this.c32) {
+      this.menu.setCustomStyleClass('menu-background');
+    } else {
+      this.menu.actor.add_style_class_name('menu-background');
+    }
     this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
     this._display();
 
