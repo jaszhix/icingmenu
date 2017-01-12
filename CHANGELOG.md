@@ -1,5 +1,9 @@
 Changelog
 
+### 1.0.3
+
+  * Fixed a bug causing duplicate category buttons to appear.
+
 ### 1.0.2
 
   * Added self-updating ability. This is disabled by default.
