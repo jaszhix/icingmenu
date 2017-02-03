@@ -319,7 +319,7 @@ MyApplet.prototype = {
     }
   },
 
-  _refreshAll: function (init) {
+  _refreshAll: function (init=null) {
     try {
       this._refreshApps();
       this._refreshFavs();
